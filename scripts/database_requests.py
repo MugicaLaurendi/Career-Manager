@@ -1,8 +1,8 @@
 import duckdb
+from datetime import datetime
 
 def add_contract_accepted(contract_data, user_id):
     
-    print(contract_data)
     # Connexion en mémoire
     con = duckdb.connect('\data\database.duckdb')
 
@@ -40,7 +40,7 @@ def add_contract_accepted(contract_data, user_id):
         )
     """)
     result = con.execute(query).fetchall()
-    print(result)
+    print(f"{datetime.now()} - Contract added for user {user_id}")
 
 def get_contract_accepted(user_id):
     
@@ -135,7 +135,7 @@ def get_pilot_intels(user_id):
     con = duckdb.connect('\data\database.duckdb')
 
     query = (f"""
-        SELECT username, wallet, plane_model, current_location FROM users WHERE user_id = {user_id};
+        SELECT username, wallet, current_aircraft, current_location FROM users WHERE id = {user_id};
     """)
     result = con.execute(query).fetchall()
     return result
@@ -146,7 +146,7 @@ def get_pilot_location(user_id):
     con = duckdb.connect('\data\database.duckdb')
 
     query = (f"""
-        SELECT current_location FROM users WHERE user_id = {user_id};
+        SELECT current_location FROM users WHERE id = {user_id};
     """)
     result = con.execute(query).fetchall()
     return result
@@ -157,10 +157,10 @@ def income_to_wallet(user_id, income):
     con = duckdb.connect('\data\database.duckdb')
 
     query = (f"""
-        UPDATE users SET wallet = wallet + {income} WHERE user_id = {user_id};
+        UPDATE users SET wallet = wallet + {income} WHERE id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(f" Wallet : + {income} $")
+    print(f"{datetime.now()} - Updating wallet for user {user_id}: + {income} $")
     return result
 
 def expense_from_wallet(user_id, expense):
@@ -169,10 +169,10 @@ def expense_from_wallet(user_id, expense):
     con = duckdb.connect('\data\database.duckdb')
 
     query = (f"""
-        UPDATE users SET wallet = wallet - {expense} WHERE user_id = {user_id};
+        UPDATE users SET wallet = wallet - {expense} WHERE id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(f" Wallet : - {expense} $")
+    print(f"{datetime.now()} - Updating wallet for user {user_id}: - {expense} $")
     return result
 
 def update_pilot_location(user_id, new_location):
@@ -181,10 +181,10 @@ def update_pilot_location(user_id, new_location):
     con = duckdb.connect('\data\database.duckdb')
 
     query = (f"""
-        UPDATE users SET current_location = '{new_location}' WHERE user_id = {user_id};
+        UPDATE users SET current_location = '{new_location}' WHERE id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(f"Location updated to: {new_location}")
+    print(f"{datetime.now()} - Location updated for user {user_id}: {new_location}")
     return result
 
 def get_users_aircrafts(user_id):

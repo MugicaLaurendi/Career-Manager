@@ -82,8 +82,10 @@ q = con.execute(query).fetchall()
 print("users_aircrafts table created")
 
 query = (f"""
+    CREATE SEQUENCE user_id_seq;
+    
     CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY DEFAULT nextval('user_id_seq'),
         username VARCHAR,
         wallet INTEGER,
         current_aircraft INTEGER,
@@ -94,7 +96,7 @@ q = con.execute(query).fetchall()
 print("users table created")
 
 query = (f"""
-    INSERT INTO users (user_id, username, wallet, current_aircraft, current_location)
+    INSERT INTO users (id, username, wallet, current_aircraft, current_location)
          VALUES (1, 'Edward Lawrence', 10000, 1, 'LFCH');
 """)
 try:

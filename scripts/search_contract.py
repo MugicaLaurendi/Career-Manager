@@ -2,6 +2,7 @@ import duckdb
 import math
 import random
 import pandas as pd
+from datetime import datetime
 from pathlib import Path
 from math import radians, sin, cos, sqrt, asin
 
@@ -184,5 +185,5 @@ def search_contract(airport_origin, contract_type_selected, destination_category
         "departure_weather",
         "reward"])
 
-    print(f"{len(df_contracts)} contracts found from {airport_origin} with the selected criteria.")
+    print(f"{datetime.now()} - {len(df_contracts)} contracts found from {airport_origin} with the selected criteria.")
     return df_contracts

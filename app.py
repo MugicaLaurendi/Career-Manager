@@ -4,6 +4,7 @@ import pandas as pd
 from types import SimpleNamespace
 from streamlit_folium import st_folium
 import time
+from datetime import datetime
 
 from scripts.search_contract import search_contract, search_airport
 from scripts.search_contract import contract_type_tuple
@@ -78,13 +79,13 @@ with contracts_tab:
             ("All", "small_airport", "medium_airport", "large_airport", "heliport", "seaplane_base")
         )
 
-        dist_min = st.number_input("Distance min", value=50)
-        dist_max = st.number_input("Distance max", value=100)
+        dist_min = st.number_input("Distance min", value=50,step=100)
+        dist_max = st.number_input("Distance max", value=100,step=100)
 
         if st.button("Search contracts", width="stretch"):
             try:
                 # Recherche des contrats
-                print(f"{now.tim}Search contracts for airport {airport_origin} with a distance between {dist_min} and {dist_max}")
+                print(f"{datetime.now()} - Search contracts for airport {airport_origin} with a distance between {dist_min} and {dist_max}")
                 df_contracts = search_contract(airport_origin, contract_type_selected, destination_category_selected, dist_min, dist_max)
 
                 st.session_state.df_contracts = df_contracts
@@ -203,9 +204,8 @@ with contracts_tab:
                                 else:
                                     drop_contract_accepted(user_id)
                                     add_contract_accepted(selected_row, user_id)
-                                    time.sleep(5)
-                                    st.info("Contract accepted", icon="🆗",width="stretch")
-                                    time.sleep(5)
+                                    st.success("Contract accepted",width="stretch")
+                                    time.sleep(4)
                                     st.rerun()
                         with col_2:
                             if st.button("Decline", type="secondary",width="stretch"):
@@ -241,10 +241,16 @@ with hangar_tab:
                 st.markdown("**Current location :** -")
 
         st.subheader("Hangar")
+        
+        st.write("List of your aircrafts in your hangar. Select one to see more details about it.")
 
         df_user_aircrafts = pd.DataFrame(get_users_aircrafts(user_id), columns=["aircraft_id", "aircraft_model", "hangar_location", "fuel_level", "maintenance_status", "purchase_price", "purchase_date"])
         user_aircraft_selection = st.dataframe(df_user_aircrafts[["aircraft_model", "hangar_location", "fuel_level", "maintenance_status", "purchase_price", "purchase_date"]],
                                        hide_index=True, on_select="rerun" ,selection_mode="single-row", column_config={"purchase_price": st.column_config.NumberColumn("Purchase price", format="$ %,d")})
+        
+        if user_aircraft_selection.selection.rows:
+            st.button("Select this aircraft", type="primary", width="stretch")
+
         
     with col_contracts :
         
@@ -285,8 +291,8 @@ with hangar_tab:
                                     add_contract_historical(contract_obj, user_id, "completed")
                                     income_to_wallet(user_id, contract_obj.reward)
                                     update_pilot_location(user_id, contract_obj.destination)
-                                    st.success("Contract completed", icon="✅", width="stretch")
-                                    time.sleep(5)
+                                    st.success("Contract completed", width="stretch")
+                                    time.sleep(4)
                                     contract = 0
                                     drop_contract_accepted(user_id)
                                     st.rerun()
