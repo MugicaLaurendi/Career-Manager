@@ -184,4 +184,5 @@ def search_contract(airport_origin, contract_type_selected, destination_category
         "departure_weather",
         "reward"])
 
+    print(f"{len(df_contracts)} contracts found from {airport_origin} with the selected criteria.")
     return df_contracts

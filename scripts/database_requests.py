@@ -51,7 +51,6 @@ def get_contract_accepted(user_id):
         SELECT * FROM contracts_accepted WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
     return result
 
 def get_contract_accepted(user_id):
@@ -63,7 +62,6 @@ def get_contract_accepted(user_id):
         SELECT * FROM contracts_accepted WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
     return result
 
 def drop_contract_accepted(user_id):
@@ -75,7 +73,6 @@ def drop_contract_accepted(user_id):
         DELETE FROM contracts_accepted WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
     return result
 
 def add_contract_historical(contract_data, user_id, status):
@@ -119,7 +116,6 @@ def add_contract_historical(contract_data, user_id, status):
         )
     """)
     result = con.execute(query).fetchall()
-    print(result)
     return result
 
 def get_contract_historical(user_id):
@@ -131,7 +127,6 @@ def get_contract_historical(user_id):
         SELECT * FROM contracts_historical WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
     return result
 
 def get_pilot_intels(user_id):
@@ -143,7 +138,6 @@ def get_pilot_intels(user_id):
         SELECT username, wallet, plane_model, current_location FROM users WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
     return result
 
 def get_pilot_location(user_id):
@@ -155,7 +149,6 @@ def get_pilot_location(user_id):
         SELECT current_location FROM users WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
     return result
 
 def income_to_wallet(user_id, income):
@@ -167,7 +160,7 @@ def income_to_wallet(user_id, income):
         UPDATE users SET wallet = wallet + {income} WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
+    print(f" Wallet : + {income} $")
     return result
 
 def expense_from_wallet(user_id, expense):
@@ -179,7 +172,7 @@ def expense_from_wallet(user_id, expense):
         UPDATE users SET wallet = wallet - {expense} WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
+    print(f" Wallet : - {expense} $")
     return result
 
 def update_pilot_location(user_id, new_location):
@@ -191,5 +184,16 @@ def update_pilot_location(user_id, new_location):
         UPDATE users SET current_location = '{new_location}' WHERE user_id = {user_id};
     """)
     result = con.execute(query).fetchall()
-    print(result)
+    print(f"Location updated to: {new_location}")
+    return result
+
+def get_users_aircrafts(user_id):
+    
+    # Connexion en mémoire
+    con = duckdb.connect('\data\database.duckdb')
+
+    query = (f"""
+        SELECT aircraft_id, aircraft_model, hangar_location, fuel_level, maintenance_status, purchase_price, purchase_date FROM users_aircrafts WHERE user_id = {user_id};
+    """)
+    result = con.execute(query).fetchall()
     return result
