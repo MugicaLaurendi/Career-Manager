@@ -29,7 +29,7 @@ user_id = 1  # ID de l'utilisateur (à remplacer par une authentification réell
 contract_columns = ["contract_category", "destination", "destination_category", "distance_nm", "cargo", "latitude", "longitude", "altitude_ft", "country_code", "city_name", "departure_hour", "departure_weather", "reward"]
 
 if "airport_origin_info" not in st.session_state:
-    st.session_state.airport_origin_info = search_airport(get_pilot_location(user_id)[0][0])
+    st.session_state.airport_origin_info = search_airport(get_user_location(user_id)[0][0])
 if "df_contracts" not in st.session_state:
     st.session_state.df_contracts = pd.DataFrame({"contract_category": [],
         "destination": [],
@@ -61,7 +61,7 @@ with contracts_tab:
         
 
 
-        airport_origin = st.text_input("Aeroport de depart (OACI)", get_pilot_location(user_id)[0][0])
+        airport_origin = st.text_input("Aeroport de depart (OACI)", get_user_location(user_id)[0][0])
         if st.button("Search airport", width="stretch"):
             try:
                 airport_origin_info = search_airport(airport_origin)
@@ -205,7 +205,7 @@ with contracts_tab:
                                     drop_contract_accepted(user_id)
                                     add_contract_accepted(selected_row, user_id)
                                     st.success("Contract accepted",width="stretch")
-                                    time.sleep(4)
+                                    time.sleep(2)
                                     st.rerun()
                         with col_2:
                             if st.button("Decline", type="secondary",width="stretch"):
@@ -226,30 +226,37 @@ with hangar_tab:
         
         with st.container(border=True):
             
-            pilot_intels = pd.DataFrame(get_pilot_intels(user_id), columns=["username", "wallet", "plane_model", "current_location"])
+            pilot_intels = pd.DataFrame(get_user_intels(user_id), columns=["username", "wallet", "plane_model", "current_location"])
             st.subheader("Pilot informations")
             
             if not pilot_intels.empty:
                 st.markdown(f"**Username :** {pilot_intels['username'].iloc[0]}")
                 st.markdown(f"**Wallet :** $ {pilot_intels['wallet'].iloc[0]:,}".replace(',', ' '))
-                st.markdown(f"**Plane model :** {pilot_intels['plane_model'].iloc[0]}")
+                st.markdown(f"**Current aircraft :** {get_users_aircrafts_name(user_id, pilot_intels['plane_model'].iloc[0])[0][0]}")
                 st.markdown(f"**Current location :** {pilot_intels['current_location'].iloc[0]}")
             else:
                 st.markdown("**Username :** -")
                 st.markdown("**Wallet :** $ 0")
-                st.markdown("**Plane model :** -")
+                st.markdown("**Current aircraft :** -")
                 st.markdown("**Current location :** -")
 
-        st.subheader("Hangar")
-        
-        st.write("List of your aircrafts in your hangar. Select one to see more details about it.")
+        with st.container(border=True):
 
-        df_user_aircrafts = pd.DataFrame(get_users_aircrafts(user_id), columns=["aircraft_id", "aircraft_model", "hangar_location", "fuel_level", "maintenance_status", "purchase_price", "purchase_date"])
-        user_aircraft_selection = st.dataframe(df_user_aircrafts[["aircraft_model", "hangar_location", "fuel_level", "maintenance_status", "purchase_price", "purchase_date"]],
-                                       hide_index=True, on_select="rerun" ,selection_mode="single-row", column_config={"purchase_price": st.column_config.NumberColumn("Purchase price", format="$ %,d")})
-        
-        if user_aircraft_selection.selection.rows:
-            st.button("Select this aircraft", type="primary", width="stretch")
+            st.subheader("Hangar")
+            
+            st.write("List of your aircrafts in your hangar. Select one to see more details about it.")
+
+            df_user_aircrafts = pd.DataFrame(get_users_aircrafts(user_id), columns=["id", "aircraft_model", "hangar_location", "fuel_level", "maintenance_level", "purchase_price", "purchase_date"])
+            user_aircraft_selection = st.dataframe(df_user_aircrafts[["aircraft_model", "hangar_location", "fuel_level", "maintenance_level", "purchase_price", "purchase_date","id"]],
+                                        hide_index=True, on_select="rerun" ,selection_mode="single-row", column_config={"purchase_price": st.column_config.NumberColumn("Purchase price", format="$ %,d")})
+            
+            if user_aircraft_selection.selection.rows:
+                if st.button("Select this aircraft", type="primary", width="stretch"):
+                    selected_index = user_aircraft_selection.selection.rows[0]
+                    update_user_current_aircraft(user_id, df_user_aircrafts.iloc[selected_index]["id"])
+                    st.success("Current aircraft updated")
+                    time.sleep(2)
+                    st.rerun()
 
         
     with col_contracts :
@@ -290,9 +297,9 @@ with hangar_tab:
                                 if get_contract_accepted(user_id) and len(get_contract_accepted(user_id)) > 0:
                                     add_contract_historical(contract_obj, user_id, "completed")
                                     income_to_wallet(user_id, contract_obj.reward)
-                                    update_pilot_location(user_id, contract_obj.destination)
+                                    update_user_location(user_id, contract_obj.destination)
                                     st.success("Contract completed", width="stretch")
-                                    time.sleep(4)
+                                    time.sleep(2)
                                     contract = 0
                                     drop_contract_accepted(user_id)
                                     st.rerun()
@@ -308,7 +315,7 @@ with hangar_tab:
                             if st.button("Confirm", type="primary",width="stretch"):
                                 add_contract_historical(contract_obj, user_id, "aborted")
                                 st.warning("Contract aborted")
-                                time.sleep(5)
+                                time.sleep(2)
                                 contract = 0
                                 drop_contract_accepted(user_id)
                                 st.rerun()
@@ -412,16 +419,40 @@ with shop_tab:
                     st.markdown(f"**Max passengers :** {selected_aircraft['max_passengers']}")
                     st.markdown(f"**Edition :** {selected_aircraft['edition']}")
 
+                
+
                 @st.dialog("Confirm Purchase",width="medium")
                 def confirm_buy():
                     st.info(f"You are about to purchase the aircraft for **$ {selected_aircraft['price_usd']:,}**".replace(',', ' '), icon="ℹ️")
+
+                    select_aircraft_location = st.text_input("Enter OACI code of the airport where you want to park your new aircraft :", placeholder=f"current location : {get_user_location(user_id)[0][0]}")
+   
                     col_1, col_2 = st.columns(2)
                     with col_1:
                         if st.button("Confirm", type="primary",width="stretch"):
-                                st.rerun()
+                            if pd.DataFrame(get_user_intels(user_id))[1].iloc[0] < selected_aircraft['price_usd']:
+                                st.warning("You don't have enough money to purchase this aircraft.", width="stretch")
+                            else:
+                                if select_aircraft_location == '':
+                                    st.warning("Please enter a location for your new aircraft.", width="stretch")
+
+                                elif check_airport_location(select_aircraft_location) is False:
+                                    st.warning("The entered airport code is not valid.", width="stretch")
+                                else:
+                                    add_user_aircraft(user_id, select_aircraft_location, selected_aircraft)
+                                    expense_from_wallet(user_id, selected_aircraft['price_usd'])
+                                    st.success("Aircraft purchased!", width="stretch")
+                                    time.sleep(2)
+                                    st.toast("A new aircraft has been added to your hangar !", icon="✈️")
+                                    st.rerun()
+
+                                
                     with col_2:
                         if st.button("Decline", type="secondary",width="stretch"):
                             st.rerun()
+                    
+
+                        
 
                 # Boutons pour compléter le contrat
                 if st.button("Buy for $ " + f"{selected_aircraft['price_usd']:,}".replace(',', ' '),type="primary", width="stretch"):

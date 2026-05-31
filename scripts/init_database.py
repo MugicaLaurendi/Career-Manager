@@ -5,8 +5,7 @@ con = duckdb.connect('\data\database.duckdb')
 
 # Etat initial
 tables = con.execute("SHOW TABLES").fetchall()
-print("INITIAL STATE :")
-print(tables)
+print(f"INITIAL STATE : {tables}")
 
 query = (f"""
     CREATE TABLE IF NOT EXISTS contracts_accepted (
@@ -58,11 +57,10 @@ query = (f"""
     CREATE TABLE IF NOT EXISTS users_aircrafts (
         id INTEGER PRIMARY KEY DEFAULT nextval('users_aircrafts_id_seq'),
         user_id INTEGER,
-        aircraft_id INTEGER,
         aircraft_model VARCHAR,
         hangar_location VARCHAR,
         fuel_level FLOAT,
-        maintenance_status VARCHAR,
+        maintenance_level FLOAT,
         purchase_date DATE,
         manufacturer VARCHAR,
         category VARCHAR,
@@ -106,8 +104,8 @@ except Exception:
     print("User already exists")
     pass
 query = (f"""
-    INSERT INTO users_aircrafts (user_id, aircraft_id, aircraft_model, hangar_location, fuel_level, maintenance_status, purchase_date, manufacturer, category, engine_type, max_speed_kts, cruise_speed_kts, range_nm, avg_fuel_consumption_gal_h, service_ceiling_ft, max_payload_kg, max_passengers, edition, purchase_price)
-         VALUES (1, 1, 'Cessna 172 Skyhawk G1000', 'LFCH', 100, 'Operational', '2026-05-28', 'Cessna', 'General Aviation', 'Piston', 127, 122, 640, 9, 14000, 385, 4, 'Standard', 745000);
+    INSERT INTO users_aircrafts (user_id, aircraft_model, hangar_location, fuel_level, maintenance_level, purchase_date, manufacturer, category, engine_type, max_speed_kts, cruise_speed_kts, range_nm, avg_fuel_consumption_gal_h, service_ceiling_ft, max_payload_kg, max_passengers, edition, purchase_price)
+         VALUES (1, 'Cessna 172 Skyhawk G1000', 'LFCH', 100, 100, '2026-05-28', 'Cessna', 'General Aviation', 'Piston', 127, 122, 640, 9, 14000, 385, 4, 'Standard', 745000);
 """)
 # try:
 q = con.execute(query).fetchall()
@@ -118,5 +116,4 @@ print("User's aircraft inserted")
 
 # Etat final
 tables = con.execute("SHOW TABLES").fetchall()
-print("FINAL STATE :")
-print(tables)
+print(f"FINAL STATE : {tables}")

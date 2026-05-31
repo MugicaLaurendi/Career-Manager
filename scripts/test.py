@@ -6,8 +6,8 @@ print("------------------ TEST START ------------------")
 
 query = (f"""
 
-    -- UPDATE users SET wallet = wallet - 7800 WHERE user_id = 1;
-    DROP TABLE IF EXISTS USERS;
+    UPDATE users SET wallet = wallet + 1000000 WHERE id = 1;
+    -- DROP TABLE IF EXISTS USERS;
 
 
 
