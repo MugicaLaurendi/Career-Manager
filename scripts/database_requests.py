@@ -213,6 +213,37 @@ def get_users_aircrafts_name(user_id,aircraft_id):
     result = con.execute(query).fetchall()
     return result
 
+def get_user_current_aircraft(user_id):
+    
+    # Connexion en mémoire
+    con = duckdb.connect('\data\database.duckdb')
+
+    query = (f"""
+        SELECT
+            users_aircrafts.aircraft_model,
+            users_aircrafts.fuel_level,
+            users_aircrafts.maintenance_level,
+            users_aircrafts.purchase_date,
+            users_aircrafts.purchase_price,
+            users_aircrafts.manufacturer,
+            users_aircrafts.category,
+            users_aircrafts.engine_type,
+            users_aircrafts.max_speed_kts,
+            users_aircrafts.cruise_speed_kts,
+            users_aircrafts.range_nm,
+            users_aircrafts.avg_fuel_consumption_gal_h,
+            users_aircrafts.service_ceiling_ft,
+            users_aircrafts.max_payload_kg,
+            users_aircrafts.max_passengers,
+            users_aircrafts.edition
+        FROM users_aircrafts
+        INNER JOIN users ON users_aircrafts.id = users.current_aircraft
+        WHERE users.id = {user_id};
+    """)
+    result = con.execute(query).fetchall()
+    print(result)
+    return result
+
 
 def get_users_aircrafts(user_id):
     
