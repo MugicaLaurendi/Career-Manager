@@ -7,8 +7,11 @@ import time
 from datetime import datetime
 
 from scripts.search_contract import search_contract, search_airport
-from scripts.search_contract import contract_type_tuple
+from scripts.search_contract import CONTRACT_TYPES_TUPLE
+
 from scripts.database_requests import *
+
+print(f"{datetime.now()} ----------------- Application started --------------------")
 
 # Configuration de la page pour qu'elle prenne toute la largeur
 st.set_page_config(layout="wide", page_title="Career Manager", page_icon="✈️",initial_sidebar_state="expanded")
@@ -26,16 +29,18 @@ st.markdown("""
 
 user_id = 1  # ID de l'utilisateur (à remplacer par une authentification réelle)
 
-contract_columns = ["contract_category", "destination", "destination_category", "distance_nm", "cargo", "latitude", "longitude", "altitude_ft", "country_code", "city_name", "departure_hour", "departure_weather", "reward"]
+contract_columns = ["contract_category", "departure_airport", "arrival_airport", "arrival_airport_category", "distance_nm", "cargo", "informations", "latitude", "longitude", "altitude_ft", "country_code", "city_name", "departure_hour", "departure_weather", "reward"]
 
 if "airport_origin_info" not in st.session_state:
-    st.session_state.airport_origin_info = search_airport(get_user_location(user_id)[0][0])
+    st.session_state.airport_origin_info = search_airport(get_user_location(user_id).loc[0,'current_location'])
 if "df_contracts" not in st.session_state:
     st.session_state.df_contracts = pd.DataFrame({"contract_category": [],
-        "destination": [],
-        "destination_category": [],
+        "departure_airport": [],
+        "arrival_airport": [],
+        "arrival_airport_category": [],
         "distance_nm": [],
         "cargo": [],
+        "informations": [],
         "latitude": [],
         "longitude": [],
         "altitude_ft": [],
@@ -61,7 +66,7 @@ with contracts_tab:
         
 
 
-        airport_origin = st.text_input("Aeroport de depart (OACI)", get_user_location(user_id)[0][0])
+        airport_origin = st.text_input("Aeroport de depart (OACI)", get_user_location(user_id).loc[0, 'current_location'])
         if st.button("Search airport", width="stretch"):
             try:
                 airport_origin_info = search_airport(airport_origin)
@@ -69,14 +74,19 @@ with contracts_tab:
             except Exception as e:
                 st.error(f"Erreur : {str(e)}")
 
-        contract_type_selected = st.selectbox(
+
+        contract_type_selected = st.multiselect(
             "Contract category:",
-            contract_type_tuple
+            CONTRACT_TYPES_TUPLE,
+            default=CONTRACT_TYPES_TUPLE
         )
 
-        destination_category_selected = st.selectbox(
+        destination_category_tuple = ("small_airport", "medium_airport", "large_airport", "heliport", "seaplane_base")
+
+        destination_category_selected = st.multiselect(
             "Destination category:",
-            ("All", "small_airport", "medium_airport", "large_airport", "heliport", "seaplane_base")
+            destination_category_tuple,
+            default=destination_category_tuple
         )
 
         dist_min = st.number_input("Distance min", value=50,step=100)
@@ -90,6 +100,7 @@ with contracts_tab:
 
                 st.session_state.df_contracts = df_contracts
                 st.success(f"{len(df_contracts)} contract(s) found")
+                time.sleep(2)
             except Exception as e:
                 st.error(f"Erreur : {str(e)}")
 
@@ -97,9 +108,7 @@ with contracts_tab:
     # --- CONTENU PRINCIPAL ---
     with col_content:
 
-        # Filtres
-
-        df_contracts_filtered = st.session_state.df_contracts
+        df_contracts = st.session_state.df_contracts
 
         # --- CARTE FOLIUM ---
 
@@ -125,18 +134,18 @@ with contracts_tab:
         ).add_to(m)
 
 
-        if df_contracts_filtered is not None and not df_contracts_filtered.empty:
+        if df_contracts is not None and not df_contracts.empty:
 
-                for contract in df_contracts_filtered.itertuples(index=True):
+                for index,contract in df_contracts.iterrows():
 
                         # Ajouter un marqueur pour chaque contrat
-                        if contract.contract_category == "Cargo":
+                        if contract['contract_category'] == "Cargo":
                             icon_color = "blue"
                             icon_logo = "book"
-                        elif contract.contract_category == "Passenger":
+                        elif contract['contract_category'] == "Passenger":
                             icon_color = "pink"
                             icon_logo = "user"
-                        elif contract.contract_category == "Tourism":
+                        elif contract['contract_category'] == "Tourism":
                             icon_color = "orange"
                             icon_logo = "camera"
                         else:
@@ -144,14 +153,14 @@ with contracts_tab:
                             icon_logo = "question"
 
                         folium.Marker(
-                            location=[contract.latitude, contract.longitude],
-                            tooltip=f"OACI: {contract.destination}</br> Contract ID: {contract[0]}</br> Distance: {contract.distance_nm} nm</br> Reward: ${contract.reward}",
+                            location=[contract['latitude'], contract['longitude']],
+                            tooltip=f"OACI: {contract['arrival_airport']}</br> Contract ID: {index}</br> Distance: {contract['distance_nm']} nm</br> Reward: ${contract['reward']}",
                             icon=folium.Icon(color=icon_color, icon=icon_logo)
                         ).add_to(m)
 
                         # Ajout de la ligne reliant les deux points
                         folium.PolyLine(
-                            locations=[(center_lat, center_lon), (contract.latitude, contract.longitude)],
+                            locations=[(center_lat, center_lon), (contract['latitude'], contract['longitude'])],
                             color="black",
                             weight=2,
                             opacity=0.5,
@@ -159,7 +168,7 @@ with contracts_tab:
                         ).add_to(m)
 
         # Affichage de la carte
-        st_folium(m, width="100%", height=400, use_container_width=False)
+        st_folium(m, width="100%", height=400, use_container_width=False, key="map_available_contracts")
 
         col1, col2 = st.columns([2,1])
 
@@ -167,7 +176,7 @@ with contracts_tab:
 
         with col1:
 
-            contract_selection = st.dataframe(df_contracts_filtered[[ "contract_category", "destination", "distance_nm", "reward" ]], hide_index=False, on_select="rerun" ,selection_mode="single-row", column_config={"reward": st.column_config.NumberColumn("Reward", format="$ %,d")})
+            contract_selection = st.dataframe(df_contracts[[ "contract_category","departure_airport" ,"arrival_airport", "distance_nm", "reward" ]], hide_index=False, on_select="rerun" ,selection_mode="single-row", column_config={"reward": st.column_config.NumberColumn("Reward", format="$ %,d")})
 
 
         # ----- DÉTAILS DU CONTRAT SÉLECTIONNÉ -----
@@ -179,27 +188,41 @@ with contracts_tab:
                     selected_index = contract_selection.selection.rows[0]
 
                     # Extraire la ligne correspondante
-                    selected_row = df_contracts_filtered.iloc[selected_index]
+                    selected_row = df_contracts.iloc[selected_index]
 
                     # Afficher les détails ailleurs dans la page
                     st.subheader("Contract details")
-                    st.markdown(f"**OACI :** {selected_row['destination']}")
-                    st.markdown(f"**Category :** {selected_row['contract_category']}")
-                    st.markdown(f"**Distance :** {selected_row['distance_nm']} nm")
-                    st.markdown(f"**country :** {selected_row['country_code']}")
-                    st.markdown(f"**city :** {selected_row['city_name']}")
-                    st.markdown(f"**Cargo :** {selected_row['cargo']}")
-                    st.markdown(f"**Departure hour :** {selected_row['departure_hour']}")
-                    st.markdown(f"**Departure weather :** {selected_row['departure_weather']}")
-                    st.markdown(f"**Reward :** $ {selected_row['reward']:,}".replace(',', ' '))
+
+
+                    with st.container(border=True,width="content",gap="xxlarge"):
+
+                        st.markdown(f"**{selected_row['departure_airport']}** ➜  **{selected_row['arrival_airport']}**")
+
+
+                    col_1, col_2 = st.columns(2)
+
+                    with col_1:
+                        st.markdown(f"**Category :** {selected_row['contract_category']}")
+                        st.markdown(f"**Distance :** {selected_row['distance_nm']} nm")
+                        st.markdown(f"**country :** {selected_row['country_code']}")
+                        st.markdown(f"**city :** {selected_row['city_name']}")
+
+                    with col_2:
+                        st.markdown(f"**Cargo :** {selected_row['cargo']}")
+                        st.markdown(f"**Departure hour :** {selected_row['departure_hour']}")
+                        st.markdown(f"**Departure weather :** {selected_row['departure_weather']}")
+                        st.markdown(f"**Reward :** $ {selected_row['reward']:,}".replace(',', ' '))
+                    
+                    st.markdown(f"**Informations :**")
+                    st.markdown(f"{selected_row['informations']}")
 
                     @st.dialog("Are you sure you want to accept this contract?",width="medium")
                     def confirm_accept():
-                        st.write(f"You are about to accept the contract to {selected_row['destination']} with a reward of $ {selected_row['reward']:,}".replace(',', ' '))
+                        st.write(f"You are about to accept the contract to {selected_row['arrival_airport']} with a reward of $ {selected_row['reward']:,}".replace(',', ' '))
                         col_1, col_2 = st.columns(2)
                         with col_1:
                             if st.button("Confirm", type="primary",width="stretch"):
-                                if get_contract_accepted(user_id) and len(get_contract_accepted(user_id)) > 0:
+                                if get_contract_accepted(user_id).empty == False:
                                     st.warning("You already have an accepted contract. Please complete or abort it before accepting a new one.", icon="⚠️",width="stretch")
                                 else:
                                     drop_contract_accepted(user_id)
@@ -227,13 +250,32 @@ with flight_tab:
 
                 st.subheader("Free flight")
 
-                st.write("This section is under construction. In the meantime, you can accept contracts in the 'Contracts' tab and manage them in the 'Hangar' tab.")
+                # Créer la carte
+                style_carte = "OpenStreetMap"
+                m_free_flight = folium.Map(location=[center_lat, center_lon], zoom_start=6, tiles=style_carte)
+
+                # Ajouter le marqueur de l'aéroport d'origine (avec couleur différente)
+                folium.Marker(
+                    location=[center_lat, center_lon],
+                    popup=f"OACI: {airport_origin}, Lat: {center_lat}, Lon: {center_lon}",
+                    icon=folium.Icon(color="green", icon="plane")
+                ).add_to(m_free_flight)
+
+                # Affichage de la carte
+                st_folium(m_free_flight, width="100%", height=400, use_container_width=False, key="map_free_flight")
+
+                st.write(f"Current location : **{get_user_location(user_id).loc[0, 'current_location']}**")
+                airport_destination_ff = st.text_input("Select a destination (OACI) :",key='free_flight_input')
+
+                if st.button("Search airport", width="stretch",key='free_flight_search'):
+                    print('ok')
 
         with col_contracts :
         
             with st.container(border=True):
             
-                contract = pd.DataFrame(get_contract_accepted(user_id), columns=contract_columns + ["user_id"])
+                st.session_state.contract = get_contract_accepted(user_id)
+                contract = st.session_state.contract
 
                 if contract is not None and not contract.empty:
 
@@ -242,18 +284,19 @@ with flight_tab:
                     with col_contract_intels:
                     
                         
-                        contract_obj = SimpleNamespace(**contract.iloc[0].to_dict())
-                        
                         st.subheader("Current contract")
-                        st.markdown(f"**OACI :** {contract_obj.destination}")
-                        st.markdown(f"**Category :** {contract_obj.contract_category}")
-                        st.markdown(f"**Distance :** {contract_obj.distance_nm} nm")
-                        st.markdown(f"**country :** {contract_obj.country_code}")
-                        st.markdown(f"**city :** {contract_obj.city_name}")
-                        st.markdown(f"**Cargo :** {contract_obj.cargo}")
-                        st.markdown(f"**Departure hour :** {contract_obj.departure_hour}")
-                        st.markdown(f"**Departure weather :** {contract_obj.departure_weather}")
-                        st.markdown(f"**Reward :** $ {contract_obj.reward}")
+
+                        with st.container(border=True, width="content"):
+                            st.markdown(f"**{contract.loc[0,'departure_airport']}**  ➜  **{contract.loc[0,'arrival_airport']}**")
+
+                        st.markdown(f"**Category :** {contract.loc[0,'contract_category']}")
+                        st.markdown(f"**Distance :** {contract.loc[0,'distance_nm']} nm")
+                        st.markdown(f"**country :** {contract.loc[0,'country_code']}")
+                        st.markdown(f"**city :** {contract.loc[0,'city_name']}")
+                        st.markdown(f"**Cargo :** {contract.loc[0,'cargo']}")
+                        st.markdown(f"**Departure hour :** {contract.loc[0,'departure_hour']}")
+                        st.markdown(f"**Departure weather :** {contract.loc[0,'departure_weather']}")
+                        st.markdown(f"**Reward :** $ {contract.loc[0,'reward']}")
 
                         left, right = st.columns(2)
 
@@ -264,13 +307,13 @@ with flight_tab:
                             col_1, col_2 = st.columns(2)
                             with col_1:
                                 if st.button("Confirm", type="primary",width="stretch"):
-                                    if get_contract_accepted(user_id) and len(get_contract_accepted(user_id)) > 0:
-                                        add_contract_historical(contract_obj, user_id, "completed")
-                                        income_to_wallet(user_id, contract_obj.reward)
-                                        update_user_location(user_id, contract_obj.destination)
+                                    if get_contract_accepted(user_id).empty == False:
+                                        add_contract_historical(st.session_state.contract, user_id, "completed")
+                                        income_to_wallet(user_id, st.session_state.contract.loc[0,'reward'])
+                                        update_user_location(user_id, st.session_state.contract.loc[0,'arrival_airport'])
                                         st.success("Contract completed", width="stretch")
                                         time.sleep(2)
-                                        contract = 0
+                                        st.session_state.contract = 0
                                         drop_contract_accepted(user_id)
                                         st.rerun()
                             with col_2:
@@ -283,10 +326,10 @@ with flight_tab:
                             col_1, col_2 = st.columns(2)
                             with col_1:
                                 if st.button("Confirm", type="primary",width="stretch"):
-                                    add_contract_historical(contract_obj, user_id, "aborted")
+                                    add_contract_historical(st.session_state.contract, user_id, "aborted")
                                     st.warning("Contract aborted")
                                     time.sleep(2)
-                                    contract = 0
+                                    st.session_state.contract = 0
                                     drop_contract_accepted(user_id)
                                     st.rerun()
                             with col_2:
@@ -320,14 +363,14 @@ with flight_tab:
 
                             # Ajouter un marqueur pour la destination
                             folium.Marker(
-                                location=[contract_obj.latitude, contract_obj.longitude],
-                                tooltip=f"OACI: {contract_obj.destination}</br> Contract ID: {contract.iloc[0, 0]}</br> Distance: {contract_obj.distance_nm} nm</br> Reward: ${contract_obj.reward}",
+                                location=[contract.loc[0,'latitude'], contract.loc[0,'longitude']],
+                                tooltip=f"OACI: {contract['arrival_airport'].iloc[0]}</br> Contract ID: {contract.iloc[0, 0]}</br> Distance: {contract['distance_nm'].iloc[0]} nm</br> Reward: ${contract['reward'].iloc[0]}",
                                 icon=folium.Icon(color="blue", icon="book")
                             ).add_to(m)
 
                             # Ajout de la ligne reliant les deux points
                             folium.PolyLine(
-                                locations=[(center_lat, center_lon), (contract_obj.latitude, contract_obj.longitude)],
+                                locations=[(center_lat, center_lon), (contract.loc[0,'latitude'], contract.loc[0,'longitude'])],
                                 color="black",
                                 weight=2,
                                 opacity=0.5,
@@ -335,7 +378,7 @@ with flight_tab:
                             ).add_to(m)
 
                             # Affichage de la carte
-                            st_folium(m, width="100%", height=500, use_container_width=False)
+                            st_folium(m, width="100%", height=500, use_container_width=False, key="map_current_contract")
                         else:
                             st.subheader("Destination map")
                             st.write("ⓘ  Aucune destination à afficher pour le moment.")
@@ -345,8 +388,8 @@ with flight_tab:
                     st.write("ⓘ  Aucun contrat accepté pour le moment.")
             
             st.subheader("Historic")
-            historic_contracts_df = pd.DataFrame(get_contract_historical(user_id), columns=contract_columns +["user_id"] +["status"])
-            historic_contracts = st.dataframe(historic_contracts_df[[ "status", "reward", "contract_category", "destination", "destination_category", "distance_nm", "cargo", "latitude", "longitude", "altitude_ft", "country_code", "city_name", "departure_hour", "departure_weather" ]], hide_index=True)
+
+            historic_contracts = st.dataframe(get_contract_historical(user_id), hide_index=True, column_config={"reward": st.column_config.NumberColumn("Reward", format="$ %,d")})
 
     
 with hangar_tab:
@@ -357,14 +400,15 @@ with hangar_tab:
         
         with st.container(border=True):
             
-            pilot_intels = pd.DataFrame(get_user_intels(user_id), columns=["username", "wallet", "plane_model", "current_location"])
+            user_intels = get_user_intels(user_id)
             st.subheader("Pilot informations")
             
-            if not pilot_intels.empty:
-                st.markdown(f"**Username :** {pilot_intels['username'].iloc[0]}")
-                st.markdown(f"**Wallet :** $ {pilot_intels['wallet'].iloc[0]:,}".replace(',', ' '))
-                st.markdown(f"**Current aircraft :** {get_users_aircrafts_name(user_id, pilot_intels['plane_model'].iloc[0])[0][0]}")
-                st.markdown(f"**Current location :** {pilot_intels['current_location'].iloc[0]}")
+            if not user_intels.empty:
+                st.markdown(f"**Username :** {user_intels['username'].iloc[0]}")
+                st.markdown(f"**Wallet :** $ {user_intels['wallet'].iloc[0]:,}".replace(',', ' '))
+                current_aircraft_id = user_intels.loc[0, 'current_aircraft']
+                st.markdown(f"**Current aircraft :** {get_users_aircrafts_name(user_id, current_aircraft_id).loc[0,'aircraft_model']}")
+                st.markdown(f"**Current location :** {user_intels['current_location'].iloc[0]}")
             else:
                 st.markdown("**Username :** -")
                 st.markdown("**Wallet :** $ 0")
@@ -381,7 +425,7 @@ with hangar_tab:
             st.subheader("Current aircraft details")
 
             current_aircraft_details = pd.DataFrame(get_user_current_aircraft(user_id),columns=["aircraft_model", "fuel_level", "maintenance_level", "purchase_price", "purchase_date","manufacturer", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers", "edition"])
-            
+
             col_1, col_2, col_3 = st.columns(3)
 
             with col_1:

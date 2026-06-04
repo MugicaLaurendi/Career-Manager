@@ -6,7 +6,38 @@ from datetime import datetime
 from pathlib import Path
 from math import radians, sin, cos, sqrt, asin
 
-contract_type_tuple = ("All", "Cargo", "Passenger")
+
+QUANTITY_OF_CONTRACTS = 20
+
+CONTRACT_TYPES_TUPLE = (
+        "Cargo",
+        "Passenger"
+    )
+
+CONTRACT_REWARDS = {
+        "Cargo": 50,
+        "Passenger": 60,
+        "Tourism": 40
+    }
+
+CONTRACT_TEMPLATE = [        
+        'contract_category',
+        'departure_airport',
+        'arrival_airport',
+        'arrival_airport_category',
+        'distance_nm',
+        'cargo',
+        'informations',
+        'latitude',
+        'longitude',
+        'altitude_ft',
+        'country_code',
+        'city_name',
+        'departure_hour',
+        'departure_weather',
+        'reward',
+        'user_id'
+    ]
 
 
 def calcul_bounding_box(lat_origine, lon_origine, distance_nm):
@@ -80,7 +111,9 @@ def search_airport(airport_oaci):
     return [(airport_oaci, lat_aeroport, lon_aeroport)]
 
 
-def search_contract(airport_origin, contract_type_selected, destination_category_selected, dist_min, dist_max):
+def search_contract(airport_origin: str, contract_type_selected: list, destination_category_selected: list, dist_min: int, dist_max: int) -> pd.DataFrame:
+
+
 
     # Chemin du fichier CSV depuis le dossier racine du projet
     project_root = Path(__file__).resolve().parent.parent
@@ -99,6 +132,14 @@ def search_contract(airport_origin, contract_type_selected, destination_category
     box_min = calcul_bounding_box(lat_aeroport, lon_aeroport, dist_min)
     box_max = calcul_bounding_box(lat_aeroport, lon_aeroport, dist_max)
 
+    # Construire la condition pour filtrer les catégories d'aéroport d'arrivée
+    if destination_category_selected == [] :
+        destination_category_condition = "1=1"  # Pas de filtre sur la catégorie d'aéroport
+    else:
+        list_destination_category = [f"'{cat}'" for cat in destination_category_selected]
+        destination_category_condition = f"type IN ({', '.join(list_destination_category)})"
+        print(destination_category_condition)
+
     # Requête pour récupérer les aéroports dans la zone d'anneau
     query = (f"""
         SELECT ident, type, latitude_deg, longitude_deg, elevation_ft, iso_country, municipality
@@ -109,81 +150,107 @@ def search_contract(airport_origin, contract_type_selected, destination_category
         AND NOT 
         (latitude_deg BETWEEN {box_min['lat_min']} AND {box_min['lat_max']} 
          AND longitude_deg BETWEEN {box_min['lon_min']} AND {box_min['lon_max']})
+         AND {destination_category_condition}
     """)
-    airports_list = con.execute(query).fetchall()
+    airports_df = con.execute(query).df()
 
-    # Appliquer un échantillonnage aléatoire pour limiter le nombre de résultats
-    quantity_to_select = min(20, len(airports_list))
-    selection_list = []
-    
-    # Filtrer par catégorie de destination si nécessaire
-    if destination_category_selected != "All":
-        airports_list = [airport for airport in airports_list if airport[1] == destination_category_selected]
-        
-    
+
+    # nombre de contrats à sélectionner par catégorie de mission
+    quantity_to_select_by_category = min(QUANTITY_OF_CONTRACTS, len(airports_df)) // len(CONTRACT_TYPES_TUPLE)
+
+
+    # Initilisation du datframe de contrats
+    contracts_df = pd.DataFrame(data= None, columns=CONTRACT_TEMPLATE)
+    print(contracts_df)
     
     # Générer des contrats pour chaque type de mission
-    for contract_type in contract_type_tuple[1:]:  # Exclure "All" 
-            contracts_list = random.sample(airports_list, quantity_to_select // (len(contract_type_tuple)-1)) if len(airports_list) > quantity_to_select else airports_list
-            for contract in contracts_list:
-                selection_list.append(contract + (contract_type,))
+    for contract_type in contract_type_selected:
+            selected_airports = airports_df.sample(n=quantity_to_select_by_category, replace=False) if len(airports_df) >= quantity_to_select_by_category else airports_df.sample(n=quantity_to_select_by_category, replace=True)
+            for id, row in selected_airports.iterrows():
+                contract = pd.DataFrame([{
+                    'contract_category': contract_type,
+                    'departure_airport': airport_origin,
+                    'arrival_airport': row['ident'],
+                    'arrival_airport_category': row['type'],
+                    'distance_nm': None,
+                    'cargo': None,
+                    'informations': None,
+                    'latitude': row['latitude_deg'],
+                    'longitude': row['longitude_deg'],
+                    'altitude_ft': row['elevation_ft'],
+                    'country_code': row['iso_country'],
+                    'city_name': row['municipality'],
+                    'departure_hour': None,
+                    'departure_weather': None,
+                    'reward': None,
+                    'user_id': None
+                }])
+                contracts_df = pd.concat([contracts_df, contract], ignore_index=True)
+    print(contracts_df)
 
-    # filtrer par type de mission si nécessaire
-    if contract_type_selected != "All":
-        selection_list = [contract for contract in selection_list if contract[7] == contract_type_selected]
-    
-    # Calcul de la distance pour chaque aéroport
-    for i, (ident, type, lat, lon, elevation, country, city, contract_type) in enumerate(selection_list):
-        distance = distance_gps(lat_aeroport, lon_aeroport, lat, lon)
-        selection_list[i] = (ident, type, lat, lon, elevation, country, city, contract_type, distance)
 
-    contract_type_reward = {
-        "Cargo": 50,
-        "Passenger": 60,
-        "Tourism": 40
-    }
+    for index, row in contracts_df.iterrows():
 
-    # calcul de la recompense pour chaque contrat
-    for i, (ident, type, lat, lon, elevation, country, city, contract_type, distance) in enumerate(selection_list):
-        reward = distance * contract_type_reward[contract_type]
-
-        selection_list[i] = (contract_type, ident, type, distance,lat, lon, elevation,country, city, reward)
+            
+        # -------------------------------------------------- CARGO --------------------------------------------------   
         
-    # ajout de l'heure de départ et de la météo (valeurs aléatoires)
-    for i, (contract_type, ident, type, distance, lat, lon, elevation, country, city, reward) in enumerate(selection_list):
-        departure_hour = f"{random.randint(0, 23)}:{random.randint(0, 59):02d}"
-        departure_weather = random.choice(["Clear", "Cloudy", "Rain", "Snow", "Fog", "Thunderstorm"])
+        if row['contract_category'] == "Cargo":
+    
+            # Calcul de la distance pour chaque aéroport d'arrivée
+            distance = distance_gps(lat_aeroport, lon_aeroport, row['latitude'], row['longitude'])
 
-        selection_list[i] = (contract_type, ident, type, distance, lat, lon, elevation, country, city, departure_hour, departure_weather, reward)
+            # calcul de la recompense pour chaque contrat
+            reward = distance * CONTRACT_REWARDS[row['contract_category']]
+        
+            # ajout de l'heure de départ et de la météo (valeurs aléatoires)
+            departure_hour = f"{random.randint(0, 23)}:{random.randint(0, 59):02d}"
+            departure_weather = random.choice(["Clear", "Cloudy", "Rain", "Snow", "Fog", "Thunderstorm"])
 
-    # ajout de la cargaison
-    for i, (contract_type, ident, type, distance, lat, lon, elevation, country, city, departure_hour, departure_weather, reward) in enumerate(selection_list):
-        if contract_type == "Cargo":
+            # ajout de la cargaison
             cargo = f"{random.randint(100, 400)} lbs"  # Quantité de cargaison en livres
-        elif contract_type == "Passenger":
+
+
+        # -------------------------------------------------- PASSENGER --------------------------------------------------   
+
+        if row['contract_category'] == "Passenger":
+    
+            # Calcul de la distance pour chaque aéroport d'arrivée
+            distance = distance_gps(lat_aeroport, lon_aeroport, row['latitude'], row['longitude'])
+
+            # calcul de la recompense pour chaque contrat
+            reward = distance * CONTRACT_REWARDS[row['contract_category']]
+        
+            # ajout de l'heure de départ et de la météo (valeurs aléatoires)
+            departure_hour = f"{random.randint(0, 23)}:{random.randint(0, 59):02d}"
+            departure_weather = random.choice(["Clear", "Cloudy", "Rain", "Snow", "Fog", "Thunderstorm"])
+
+            # ajout des passagers
             cargo = f" {random.randint(1, 3)} persons ({random.randint(100, 400)} lbs)"  # Nombre de passagers et poids total
-        else:
-            cargo = None
 
-        selection_list[i] = (contract_type, ident, type, distance, cargo, lat, lon, elevation, country, city, departure_hour, departure_weather, reward)
-    
-    
-    
-    # retoune la liste des contrats
-    df_contracts = pd.DataFrame(selection_list, columns=[
-        "contract_category",
-        "destination",
-        "destination_category",
-        "distance_nm",
-        "cargo",
-        "latitude",
-        "longitude",
-        "altitude_ft",
-        "country_code",
-        "city_name",
-        "departure_hour",
-        "departure_weather",
-        "reward"])
 
-    print(f"{datetime.now()} - {len(df_contracts)} contracts found from {airport_origin} with the selected criteria.")
-    return df_contracts
+        # ---------------- Mise à jour du dataframe de contrats ----------------
+
+        contracts_df.loc[index] = {
+            'contract_category': row['contract_category'],
+            'departure_airport': row['departure_airport'],
+            'arrival_airport': row['arrival_airport'],
+            'arrival_airport_category': row['arrival_airport_category'],
+            'distance_nm': distance,
+            'cargo': cargo,
+            'informations': row['informations'],
+            'latitude': row['latitude'],
+            'longitude': row['longitude'],
+            'altitude_ft': row['altitude_ft'],
+            'country_code': row['country_code'],
+            'city_name': row['city_name'],
+            'departure_hour': departure_hour,
+            'departure_weather': departure_weather,
+            'reward': reward,
+            'user_id': row['user_id']
+        }
+
+    
+
+
+    print(f"{datetime.now()} - {len(contracts_df)} contracts found from {airport_origin} with the selected criteria.")
+    return contracts_df

@@ -4,18 +4,22 @@ import time
 from pathlib import Path
 from datetime import datetime
 
+DATABASE_PATH = '\data\database.duckdb'
+
 def add_contract_accepted(contract_data, user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         INSERT INTO contracts_accepted (
             contract_category,
-            destination,
-            destination_category,
+            departure_airport,
+            arrival_airport,
+            arrival_airport_category,
             distance_nm,
             cargo,
+            informations,
             latitude,
             longitude,
             altitude_ft,
@@ -27,10 +31,12 @@ def add_contract_accepted(contract_data, user_id):
             user_id
         ) VALUES (
             '{contract_data.contract_category}',
-            '{contract_data.destination}',
-            '{contract_data.destination_category}',
+            '{contract_data.departure_airport}',
+            '{contract_data.arrival_airport}',
+            '{contract_data.arrival_airport_category}',
             {contract_data.distance_nm},
             '{contract_data.cargo}',
+            '{contract_data.informations}',
             {contract_data.latitude},
             {contract_data.longitude},
             {contract_data.altitude_ft},
@@ -42,54 +48,60 @@ def add_contract_accepted(contract_data, user_id):
             {user_id}
         )
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     print(f"{datetime.now()} - Contract added for user {user_id}")
 
 def get_contract_accepted(user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         SELECT * FROM contracts_accepted WHERE user_id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def get_contract_accepted(user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         SELECT * FROM contracts_accepted WHERE user_id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def drop_contract_accepted(user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         DELETE FROM contracts_accepted WHERE user_id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def add_contract_historical(contract_data, user_id, status):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
+
+    # Extract the first row if contract_data is a DataFrame
+    if hasattr(contract_data, 'iloc'):
+        contract_data = contract_data.iloc[0]
 
     query = (f"""
         INSERT INTO contracts_historical (
             contract_category,
-            destination,
-            destination_category,
+            departure_airport,
+            arrival_airport,
+            arrival_airport_category,
             distance_nm,
             cargo,
+            informations,
             latitude,
             longitude,
             altitude_ft,
@@ -99,124 +111,128 @@ def add_contract_historical(contract_data, user_id, status):
             departure_weather,
             reward,
             user_id,
-            status
+            status,
+            date
         ) VALUES (
-            '{contract_data.contract_category}',
-            '{contract_data.destination}',
-            '{contract_data.destination_category}',
-            {contract_data.distance_nm},
-            '{contract_data.cargo}',
-            {contract_data.latitude},
-            {contract_data.longitude},
-            {contract_data.altitude_ft},
-            '{contract_data.country_code}',
-            '{contract_data.city_name}',
-            '{contract_data.departure_hour}',
-            '{contract_data.departure_weather}',
-            {contract_data.reward},
+            '{contract_data['contract_category']}',
+            '{contract_data['departure_airport']}',
+            '{contract_data['arrival_airport']}',
+            '{contract_data['arrival_airport_category']}',
+            {contract_data['distance_nm']},
+            '{contract_data['cargo']}',
+            '{contract_data['informations']}',
+            {contract_data['latitude']},
+            {contract_data['longitude']},
+            {contract_data['altitude_ft']},
+            '{contract_data['country_code']}',
+            '{contract_data['city_name']}',
+            '{contract_data['departure_hour']}',
+            '{contract_data['departure_weather']}',
+            '{contract_data['reward']}',
             {user_id},
-            '{status}'
+            '{status}',
+            '{datetime.now()}'
         )
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def get_contract_historical(user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         SELECT * FROM contracts_historical WHERE user_id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def get_user_intels(user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         SELECT username, wallet, current_aircraft, current_location FROM users WHERE id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def get_user_location(user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         SELECT current_location FROM users WHERE id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def income_to_wallet(user_id, income):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         UPDATE users SET wallet = wallet + {income} WHERE id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     print(f"{datetime.now()} - Updating wallet for user {user_id}: + {income} $")
     return result
 
 def expense_from_wallet(user_id, expense):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         UPDATE users SET wallet = wallet - {expense} WHERE id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     print(f"{datetime.now()} - Updating wallet for user {user_id}: - {expense} $")
     return result
 
 def update_user_location(user_id, new_location):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         UPDATE users SET current_location = '{new_location}' WHERE id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     print(f"{datetime.now()} - Location updated for user {user_id}: {new_location}")
     return result
 
 def update_user_current_aircraft(user_id, new_aircraft):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         UPDATE users SET current_aircraft = '{new_aircraft}' WHERE id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     print(f"{datetime.now()} - Aircraft updated for user {user_id}: {new_aircraft}")
     return result
 
 def get_users_aircrafts_name(user_id,aircraft_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         SELECT aircraft_model FROM users_aircrafts WHERE user_id = {user_id} AND id = {aircraft_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def get_user_current_aircraft(user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         SELECT
@@ -240,26 +256,25 @@ def get_user_current_aircraft(user_id):
         INNER JOIN users ON users_aircrafts.id = users.current_aircraft
         WHERE users.id = {user_id};
     """)
-    result = con.execute(query).fetchall()
-    print(result)
+    result = con.execute(query).df()
     return result
 
 
 def get_users_aircrafts(user_id):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         SELECT id, aircraft_model, hangar_location, fuel_level, maintenance_level, purchase_price, purchase_date FROM users_aircrafts WHERE user_id = {user_id};
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     return result
 
 def add_user_aircraft(user_id: int, aircraft_location: str, aircraft_data: pd.Series):
     
     # Connexion en mémoire
-    con = duckdb.connect('\data\database.duckdb')
+    con = duckdb.connect(DATABASE_PATH)
 
     query = (f"""
         INSERT INTO users_aircrafts (
@@ -302,7 +317,7 @@ def add_user_aircraft(user_id: int, aircraft_location: str, aircraft_data: pd.Se
             {aircraft_data['price_usd']}
         )
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
     print(f"{datetime.now()} - Aircraft '{aircraft_data['name']}' added to user {user_id}'s collection at location {aircraft_location}")
 
 def check_airport_location(airport_oaci):
@@ -321,7 +336,7 @@ def check_airport_location(airport_oaci):
         FROM read_csv_auto('{csv_path_airports.as_posix()}')
         WHERE ident = '{airport_oaci}' ;
     """)
-    result = con.execute(query).fetchall()
+    result = con.execute(query).df()
 
     if result[0][0] > 0:
         print(f"{datetime.now()} - Airport '{airport_oaci}' found in database.")

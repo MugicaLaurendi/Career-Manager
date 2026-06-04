@@ -7,13 +7,19 @@ con = duckdb.connect('\data\database.duckdb')
 tables = con.execute("SHOW TABLES").fetchall()
 print(f"INITIAL STATE : {tables}")
 
+
+# ------------------ contracts_accepted -------------------
+
+
 query = (f"""
     CREATE TABLE IF NOT EXISTS contracts_accepted (
         contract_category VARCHAR,
-        destination VARCHAR,
-        destination_category VARCHAR,
+        departure_airport VARCHAR,
+        arrival_airport VARCHAR,
+        arrival_airport_category VARCHAR,
         distance_nm INTEGER,
         cargo VARCHAR,
+        informations VARCHAR,
         latitude FLOAT,
         longitude FLOAT,
         altitude_ft FLOAT,
@@ -28,13 +34,22 @@ query = (f"""
 q = con.execute(query).fetchall()
 print("contracts_accepted table created")
 
+
+# ------------------ contracts_historical -------------------
+
+
 query = (f"""
     CREATE TABLE IF NOT EXISTS contracts_historical (
+        status VARCHAR,
+        reward INTEGER,
+        date DATE,
         contract_category VARCHAR,
-        destination VARCHAR,
-        destination_category VARCHAR,
+        departure_airport VARCHAR,
+        arrival_airport VARCHAR,
+        arrival_airport_category VARCHAR,
         distance_nm INTEGER,
         cargo VARCHAR,
+        informations VARCHAR,
         latitude FLOAT,
         longitude FLOAT,
         altitude_ft FLOAT,
@@ -42,13 +57,15 @@ query = (f"""
         city_name VARCHAR,
         departure_hour VARCHAR,
         departure_weather VARCHAR,
-        reward INTEGER,
-        user_id INTEGER,
-        status VARCHAR
+        user_id INTEGER
+        
     );
 """)
 q = con.execute(query).fetchall()
 print("contracts_historical table created")
+
+
+# ------------------ users_aircrafts -------------------
 
 
 query = (f"""
@@ -79,6 +96,10 @@ query = (f"""
 q = con.execute(query).fetchall()
 print("users_aircrafts table created")
 
+
+# ------------------ users -------------------
+
+
 query = (f"""
     CREATE SEQUENCE user_id_seq;
     
@@ -92,6 +113,10 @@ query = (f"""
 """)
 q = con.execute(query).fetchall()
 print("users table created")
+
+
+# ------------------- INSERTIONS -------------------
+
 
 query = (f"""
     INSERT INTO users (id, username, wallet, current_aircraft, current_location)
