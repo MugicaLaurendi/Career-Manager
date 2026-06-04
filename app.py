@@ -49,6 +49,10 @@ if "df_contracts" not in st.session_state:
         "departure_hour": [],
         "departure_weather": [],
         "reward": []})
+if "dest_ff_lat" not in st.session_state:
+    st.session_state.dest_ff_lat = 0
+if "dest_ff_lon" not in st.session_state:
+    st.session_state.dest_ff_lon = 0
 
 # Titre de la page
 st.header("✈️  Career Manager ")
@@ -250,6 +254,7 @@ with flight_tab:
 
                 st.subheader("Free flight")
 
+                
                 # Créer la carte
                 style_carte = "OpenStreetMap"
                 m_free_flight = folium.Map(location=[center_lat, center_lon], zoom_start=6, tiles=style_carte)
@@ -260,15 +265,48 @@ with flight_tab:
                     popup=f"OACI: {airport_origin}, Lat: {center_lat}, Lon: {center_lon}",
                     icon=folium.Icon(color="green", icon="plane")
                 ).add_to(m_free_flight)
+                
+                if st.session_state.dest_ff_lat != 0 and st.session_state.dest_ff_lat != 0 :
+                    
+                    folium.Marker(
+                        location=[st.session_state.dest_ff_lat, st.session_state.dest_ff_lon],
+                        icon=folium.Icon(color="green", icon="arrow-down")
+                    ).add_to(m_free_flight)
 
+                    # Ajout de la ligne reliant les deux points
+                    folium.PolyLine(
+                        locations=[(center_lat, center_lon), (st.session_state.dest_ff_lat, st.session_state.dest_ff_lon)],
+                        color="black",
+                        weight=2,
+                        opacity=0.5,
+                        dash_array="10, 10"
+                    ).add_to(m_free_flight)
+                
                 # Affichage de la carte
                 st_folium(m_free_flight, width="100%", height=400, use_container_width=False, key="map_free_flight")
 
                 st.write(f"Current location : **{get_user_location(user_id).loc[0, 'current_location']}**")
+                dest_ff_coo = []
                 airport_destination_ff = st.text_input("Select a destination (OACI) :",key='free_flight_input')
-
-                if st.button("Search airport", width="stretch",key='free_flight_search'):
-                    print('ok')
+                if st.button("Search destination"):
+                    dest_ff_coo = get_airport_location(airport_destination_ff)
+                    if dest_ff_coo == []:
+                        st.warning("No destination selected")
+                    else:
+                        st.session_state.dest_ff_lat = dest_ff_coo[0]
+                        st.session_state.dest_ff_lon = dest_ff_coo[1]
+                        st.rerun()
+                     
+                if st.button(f"Flight to destination ",type="primary", width="stretch"):
+                    if st.session_state.dest_ff_lat == 0 and st.session_state.dest_ff_lon == 0 :
+                        st.warning("No destination selected")
+                    elif airport_destination_ff != '':
+                        update_user_location(user_id,airport_destination_ff)
+                        st.success(f"You have moved to {airport_destination_ff}")
+                        time.sleep(2)
+                        st.rerun()
+                    else:
+                        st.warning("No destination selected")
 
         with col_contracts :
         

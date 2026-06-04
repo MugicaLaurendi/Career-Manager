@@ -4,7 +4,9 @@ import time
 from pathlib import Path
 from datetime import datetime
 
+
 DATABASE_PATH = '\data\database.duckdb'
+
 
 def add_contract_accepted(contract_data, user_id):
     
@@ -259,7 +261,6 @@ def get_user_current_aircraft(user_id):
     result = con.execute(query).df()
     return result
 
-
 def get_users_aircrafts(user_id):
     
     # Connexion en mémoire
@@ -344,3 +345,28 @@ def check_airport_location(airport_oaci):
     else:
         print(f"{datetime.now()} - Airport '{airport_oaci}' NOT found in database.")
         return False
+    
+def get_airport_location(airport_oaci):
+    # Chemin du fichier CSV depuis le dossier racine du projet
+    project_root = Path(__file__).resolve().parent.parent
+    csv_path_airports = project_root / "data" / "airports.csv"
+    if not csv_path_airports.exists():
+        raise FileNotFoundError(f"Fichier introuvable : {csv_path_airports}")
+
+    # Connexion en mémoire
+    con = duckdb.connect()
+
+    # Requête pour vérifier l'existence de l'aéroport
+    query = (f"""
+        SELECT "latitude_deg","longitude_deg"
+        FROM read_csv_auto('{csv_path_airports.as_posix()}')
+        WHERE ident = '{airport_oaci}' ;
+    """)
+    result = con.execute(query).df()
+
+    if result.empty:
+        print(f"{datetime.now()} - Airport '{airport_oaci}' NOT found in database.")
+        return []
+    else:
+        print(f"{datetime.now()} - Airport '{airport_oaci}' found in database.")
+        return [result.loc[0,"latitude_deg"], result.loc[0,"longitude_deg"]]
