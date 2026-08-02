@@ -89,7 +89,6 @@ query = (f"""
         service_ceiling_ft INTEGER,
         max_payload_kg INTEGER,
         max_passengers INTEGER,
-        edition VARCHAR,
         purchase_price INTEGER
     );
 """)
@@ -129,8 +128,8 @@ except Exception:
     print("User already exists")
     pass
 query = (f"""
-    INSERT INTO users_aircrafts (user_id, aircraft_model, hangar_location, fuel_level, maintenance_level, purchase_date, manufacturer, category, engine_type, max_speed_kts, cruise_speed_kts, range_nm, avg_fuel_consumption_gal_h, service_ceiling_ft, max_payload_kg, max_passengers, edition, purchase_price)
-         VALUES (1, 'Cessna 172 Skyhawk G1000', 'LFCH', 100, 100, '2026-05-28', 'Cessna', 'General Aviation', 'Piston', 127, 122, 640, 9, 14000, 385, 4, 'Standard', 745000);
+    INSERT INTO users_aircrafts (user_id, aircraft_model, hangar_location, fuel_level, maintenance_level, purchase_date, manufacturer, category, engine_type, max_speed_kts, cruise_speed_kts, range_nm, avg_fuel_consumption_gal_h, service_ceiling_ft, max_payload_kg, max_passengers, purchase_price)
+         VALUES (1, 'Cessna 172 Skyhawk G1000', 'LFCH', 100, 100, '2026-05-28', 'Cessna', 'General Aviation', 'Piston', 127, 122, 640, 9, 14000, 385, 4, 745000);
 """)
 # try:
 q = con.execute(query).fetchall()

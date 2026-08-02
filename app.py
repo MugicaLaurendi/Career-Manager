@@ -462,7 +462,7 @@ with hangar_tab:
 
             st.subheader("Current aircraft details")
 
-            current_aircraft_details = pd.DataFrame(get_user_current_aircraft(user_id),columns=["aircraft_model", "fuel_level", "maintenance_level", "purchase_price", "purchase_date","manufacturer", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers", "edition"])
+            current_aircraft_details = pd.DataFrame(get_user_current_aircraft(user_id),columns=["aircraft_model", "fuel_level", "maintenance_level", "purchase_price", "purchase_date","manufacturer", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers"])
 
             col_1, col_2, col_3 = st.columns(3)
 
@@ -517,7 +517,7 @@ with shop_tab:
 
         df_aircrafts = pd.read_csv("./data/aircraft.csv")
         
-        aircraft_selection = st.dataframe(df_aircrafts[[ "name", "manufacturer","price_usd", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers", "edition" ]],
+        aircraft_selection = st.dataframe(df_aircrafts[[ "name", "manufacturer","price_usd", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers" ]],
                                            hide_index=True, on_select="rerun" ,selection_mode="single-row", column_config={"price_usd": st.column_config.NumberColumn("Price", format="$ %,d")})
 
         
@@ -547,7 +547,6 @@ with shop_tab:
                     st.markdown(f"**Service ceiling :** {selected_aircraft['service_ceiling_ft']} ft")
                     st.markdown(f"**Max payload :** {selected_aircraft['max_payload_kg']} kg")
                     st.markdown(f"**Max passengers :** {selected_aircraft['max_passengers']}")
-                    st.markdown(f"**Edition :** {selected_aircraft['edition']}")
 
                 
 

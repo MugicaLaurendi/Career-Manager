@@ -252,8 +252,7 @@ def get_user_current_aircraft(user_id):
             users_aircrafts.avg_fuel_consumption_gal_h,
             users_aircrafts.service_ceiling_ft,
             users_aircrafts.max_payload_kg,
-            users_aircrafts.max_passengers,
-            users_aircrafts.edition
+            users_aircrafts.max_passengers
         FROM users_aircrafts
         INNER JOIN users ON users_aircrafts.id = users.current_aircraft
         WHERE users.id = {user_id};
@@ -295,7 +294,6 @@ def add_user_aircraft(user_id: int, aircraft_location: str, aircraft_data: pd.Se
             service_ceiling_ft,
             max_payload_kg,
             max_passengers,
-            edition,
             purchase_price
         ) VALUES (
             {user_id},
@@ -314,7 +312,6 @@ def add_user_aircraft(user_id: int, aircraft_location: str, aircraft_data: pd.Se
             {aircraft_data['service_ceiling_ft']},
             {aircraft_data['max_payload_kg']},
             {aircraft_data['max_passengers']},
-            '{aircraft_data['edition']}',
             {aircraft_data['price_usd']}
         )
     """)
