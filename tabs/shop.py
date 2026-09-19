@@ -54,12 +54,12 @@ def render(user_id):
                 def confirm_buy():
                     st.info(f"You are about to purchase the aircraft for **$ {selected_aircraft['price_usd']:,}**".replace(',', ' '), icon="ℹ️")
 
-                    select_aircraft_location = st.text_input("Enter OACI code of the airport where you want to park your new aircraft :", placeholder=f"current location : {get_user_location(user_id)[0][0]}")
+                    select_aircraft_location = st.text_input("Enter OACI code of the airport where you want to park your new aircraft :", placeholder=f"current location : {get_user_location(user_id).loc[0, 'current_location']}")
 
                     col_1, col_2 = st.columns(2)
                     with col_1:
                         if st.button("Confirm", type="primary", width="stretch"):
-                            if pd.DataFrame(get_user_intels(user_id))[1].iloc[0] < selected_aircraft['price_usd']:
+                            if get_user_intels(user_id)['wallet'].iloc[0] < selected_aircraft['price_usd']:
                                 st.warning("You don't have enough money to purchase this aircraft.", width="stretch")
                             else:
                                 if select_aircraft_location == '':
