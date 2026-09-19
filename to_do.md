@@ -7,11 +7,6 @@
 - [x] **Fonction dupliquée** — `get_contract_accepted` définie deux fois à l'identique (`database_requests.py:56-65` et `67-76`), code mort qui prête à confusion.
 - [x] **Bugs probables dans `shop.py`** — `tabs/shop.py:57` (`get_user_location(user_id)[0][0]`, incohérent avec le `.loc[...]` utilisé ailleurs) et ligne 62 (indexation positionnelle sur une colonne nommée) risquent de lever des `KeyError`.
 
-## 🟠 Hygiène de projet
-
-- [ ] **Scripts de debug committés dans `scripts/`** — `test.py` (modifie le wallet en prod !) et `testo.py` (code cassé, `NameError`) devraient soit devenir de vrais tests `pytest` dans un dossier `tests/`, soit être supprimés.
-- [ ] **Gros fichiers/état versionnés** — `data/database.duckdb` (2,9 Mo, état de session utilisateur) devrait être dans `.gitignore` ; `airports.csv` (12,6 Mo) et `runways.csv` (3,9 Mo) gagneraient à passer en Git LFS ou téléchargement à l'installation plutôt qu'en tracking git direct.
-- [ ] **Aucune CI/tests** — pas de `.github/workflows`, pas de suite pytest réelle.
 
 ## 🟡 Fonctionnel / dette
 
@@ -19,6 +14,12 @@
 - [ ] `user_id = 1` en dur (`app.py:27`) — pas d'authentification, cohérent avec ce que note déjà le README.
 - [ ] Code de carte Folium dupliqué entre `contracts.py` et `flight.py` — à mutualiser dans un helper commun.
 - [ ] Aucun typing, gestion d'erreurs inégale (`try/except Exception` générique par endroits, absente dans `database_requests.py`).
+- [ ] Ajouter la gestion d'utilisateurs et une authentification
+- [ ] ajouter une navbar sur la gauche
+- [ ] Permettre l'acceptation réelle d'un contrat et la mise à jour du portefeuille
+- [ ] Ajouter des détails de l'aéronef et un hangar actif
+- [ ] Optimiser la génération des contrats et les filtres de recherche
+
 
 ## ✅ Points forts à noter
 

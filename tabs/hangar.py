@@ -24,7 +24,7 @@ def render(user_id):
             if not user_intels.empty:
                 st.markdown(f"**Username :** {user_intels['username'].iloc[0]}")
                 st.markdown(f"**Wallet :** $ {user_intels['wallet'].iloc[0]:,}".replace(',', ' '))
-                current_aircraft_id = user_intels.loc[0, 'current_aircraft']
+                current_aircraft_id = int(user_intels.loc[0, 'current_aircraft'])
                 st.markdown(f"**Current aircraft :** {get_users_aircrafts_name(user_id, current_aircraft_id).loc[0,'aircraft_model']}")
                 st.markdown(f"**Current location :** {user_intels['current_location'].iloc[0]}")
             else:
@@ -78,6 +78,6 @@ def render(user_id):
         if user_aircraft_selection.selection.rows:
             if st.button("Select this aircraft", type="primary"):
                 selected_index = user_aircraft_selection.selection.rows[0]
-                update_user_current_aircraft(user_id, df_user_aircrafts.iloc[selected_index]["id"])
+                update_user_current_aircraft(user_id, int(df_user_aircrafts.iloc[selected_index]["id"]))
                 st.success("Current aircraft updated")
                 st.rerun()
