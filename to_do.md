@@ -3,7 +3,7 @@
 ## 🔴 Bugs / risques à corriger en priorité
 
 - [x] **Injection SQL généralisée** — `scripts/database_requests.py` construisait presque toutes les requêtes par f-string avec les entrées utilisateur interpolées directement. Corrigé : toutes les requêtes utilisent désormais des paramètres `?` (DuckDB). Seuls les chemins de fichiers CSV internes (non fournis par l'utilisateur) restent interpolés.
-- [ ] **Chemin de la base fragile** — `scripts/database_requests.py:8` : `DATABASE_PATH = '\data\database.duckdb'` — chaîne non préfixée `r""`, dépend du lecteur courant sous Windows. Le reste du code fait ça bien via `Path(__file__).resolve().parent.parent` (voir `search_contract.py:90`) — à harmoniser.
+- [x] **Chemin de la base fragile** — `scripts/database_requests.py:8` utilise désormais `Path(__file__).resolve().parent.parent / "data" / "database.duckdb"`, cohérent avec le reste du code (`search_contract.py:90`).
 - [x] **Fonction dupliquée** — `get_contract_accepted` définie deux fois à l'identique (`database_requests.py:56-65` et `67-76`), code mort qui prête à confusion.
 - [ ] **Bugs probables dans `shop.py`** — `tabs/shop.py:57` (`get_user_location(user_id)[0][0]`, incohérent avec le `.loc[...]` utilisé ailleurs) et ligne 62 (indexation positionnelle sur une colonne nommée) risquent de lever des `KeyError`.
 

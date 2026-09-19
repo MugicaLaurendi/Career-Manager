@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-DATABASE_PATH = '\data\database.duckdb'
+DATABASE_PATH = str(Path(__file__).resolve().parent.parent / "data" / "database.duckdb")
 
 
 def add_contract_accepted(contract_data, user_id):
