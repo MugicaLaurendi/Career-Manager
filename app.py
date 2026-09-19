@@ -5,7 +5,7 @@ from datetime import datetime
 from scripts.search_contract import search_airport
 from scripts.database_requests import get_user_location
 
-from tabs import contracts, flight, hangar, shop, bank
+from tabs import sidebar, contracts, flight, hangar, shop, bank
 
 print(f"{datetime.now()} ----------------- Application started --------------------")
 
@@ -51,6 +51,8 @@ if "dest_ff_lon" not in st.session_state:
 # Titre de la page
 st.header("✈️  Career Manager ")
 
+with st.sidebar:
+    sidebar.render(user_id)
 
 contracts_tab, flight_tab, hangar_tab, shop_tab, bank_tab = st.tabs(["📫  Contracts", "✈️  Flight", "🔧  Hangar", "🛒  Shop", "🏦  Bank"])
 
