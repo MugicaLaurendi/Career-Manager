@@ -5,9 +5,7 @@ from datetime import datetime
 from scripts.search_contract import search_airport
 from scripts.database_requests import get_user_location
 
-from tabs import sidebar, contracts, flight, hangar, shop, bank
-
-print(f"{datetime.now()} ----------------- Application started --------------------")
+from tabs import sidebar, contracts, flight, hangar, shop, bank, login
 
 # Configuration de la page pour qu'elle prenne toute la largeur
 st.set_page_config(layout="wide", page_title="Career Manager", page_icon="✈️", initial_sidebar_state="expanded")
@@ -21,9 +19,20 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Initialiser les variables
+# Authentification (sélection de profil, sans mot de passe)
 
-user_id = 1  # ID de l'utilisateur (à remplacer par une authentification réelle)
+if "user_id" not in st.session_state:
+
+    col1, col2, col3 = st.columns(3)
+
+    with col2:
+        st.header("Career Manager ")
+        login.render()
+        st.stop()
+
+user_id = st.session_state.user_id
+
+# Initialiser les variables
 
 if "airport_origin_info" not in st.session_state:
     st.session_state.airport_origin_info = search_airport(get_user_location(user_id).loc[0, 'current_location'])

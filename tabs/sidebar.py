@@ -1,15 +1,26 @@
 import streamlit as st
+from datetime import datetime
 
 from scripts.database_requests import get_user_intels, get_users_aircrafts_name
+from scripts.profile_image import get_profile_image_path, change_profil_picture
 
 
 def render(user_id):
 
+    user_intels = get_user_intels(user_id)
+
+    if st.button("Logout", width="stretch"):
+        st.session_state.clear()
+        print(f"{datetime.now()} User {user_intels['username'].iloc[0]} logged out.")
+        st.rerun()
+
     with st.container(border=True):
 
-        st.image("data/images/pilote_placeholder.png")
+        st.image(get_profile_image_path(user_id))
 
-        user_intels = get_user_intels(user_id)
+        if st.button("Change picture", icon=":material/photo_camera:", width="stretch"):
+            change_profil_picture(user_id)
+
         st.subheader("Pilot informations")
 
         if not user_intels.empty:

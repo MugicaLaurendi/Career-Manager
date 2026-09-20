@@ -136,6 +136,73 @@ def get_contract_historical(user_id):
     result = con.execute(query, (user_id,)).df()
     return result
 
+def get_all_users():
+
+    # Connexion en mémoire
+    con = duckdb.connect(DATABASE_PATH)
+
+    query = "SELECT id, username FROM users ORDER BY username;"
+    result = con.execute(query).df()
+    return result
+
+def create_user(username):
+
+    username = username.strip()
+
+    existing_users = get_all_users()
+    if not existing_users.empty and username.lower() in existing_users['username'].str.lower().values:
+        return None
+
+    # Connexion en mémoire
+    con = duckdb.connect(DATABASE_PATH)
+
+    default_location = "LFCH"
+
+    # La séquence user_id_seq n'est pas synchronisée avec les id insérés manuellement
+    # par le seed (voir scripts/init_database.py), on calcule donc l'id explicitement.
+    next_id = con.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM users;").fetchone()[0]
+    con.execute(
+        "INSERT INTO users (id, username, wallet, current_location) VALUES (?, ?, ?, ?);",
+        (next_id, username, 10000, default_location),
+    )
+    user_id = next_id
+
+    starter_aircraft = pd.Series({
+        'name': "Cessna 172 Skyhawk G1000",
+        'manufacturer': "Cessna",
+        'category': "General Aviation",
+        'engine_type': "Piston",
+        'max_speed_kts': 127,
+        'cruise_speed_kts': 122,
+        'range_nm': 640,
+        'avg_fuel_consumption_gal_h': 9,
+        'service_ceiling_ft': 14000,
+        'max_payload_kg': 385,
+        'max_passengers': 4,
+        'price_usd': 745000,
+    })
+    aircraft_id = add_user_aircraft(user_id, default_location, starter_aircraft)
+
+    con.execute("UPDATE users SET current_aircraft = ? WHERE id = ?;", (aircraft_id, user_id))
+
+    print(f"{datetime.now()} - New profile created: '{username}' (user_id={user_id})")
+    return user_id
+
+def delete_user(user_id):
+
+    # Connexion en mémoire
+    con = duckdb.connect(DATABASE_PATH)
+
+    for table, column in [
+        ("contracts_accepted", "user_id"),
+        ("contracts_historical", "user_id"),
+        ("users_aircrafts", "user_id"),
+        ("users", "id"),
+    ]:
+        con.execute(f"DELETE FROM {table} WHERE {column} = ?;", (user_id,))
+
+    print(f"{datetime.now()} - Profile deleted (user_id={user_id})")
+
 def get_user_intels(user_id):
 
     # Connexion en mémoire
@@ -266,6 +333,7 @@ def add_user_aircraft(user_id: int, aircraft_location: str, aircraft_data: pd.Se
             max_passengers,
             purchase_price
         ) VALUES (?, ?, ?, 100, 100, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING id
     """
     params = (
         user_id,
@@ -284,8 +352,9 @@ def add_user_aircraft(user_id: int, aircraft_location: str, aircraft_data: pd.Se
         aircraft_data['max_passengers'],
         aircraft_data['price_usd'],
     )
-    result = con.execute(query, params).df()
+    aircraft_id = con.execute(query, params).fetchone()[0]
     print(f"{datetime.now()} - Aircraft '{aircraft_data['name']}' added to user {user_id}'s collection at location {aircraft_location}")
+    return aircraft_id
 
 def check_airport_location(airport_oaci):
     # Chemin du fichier CSV depuis le dossier racine du projet
