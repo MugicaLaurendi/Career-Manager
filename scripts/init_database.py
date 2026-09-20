@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import duckdb
 
 # Connexion en mémoire
@@ -74,6 +76,7 @@ query = (f"""
     CREATE TABLE IF NOT EXISTS users_aircrafts (
         id INTEGER PRIMARY KEY DEFAULT nextval('users_aircrafts_id_seq'),
         user_id INTEGER,
+        id_aircraft INTEGER,
         aircraft_model VARCHAR,
         hangar_location VARCHAR,
         fuel_level FLOAT,
@@ -127,9 +130,14 @@ try:
 except Exception:
     print("User already exists")
     pass
+AIRCRAFT_CSV_PATH = Path(__file__).resolve().parent.parent / "data" / "aircraft.csv"
+STARTER_AIRCRAFT_ID = 20
+
 query = (f"""
-    INSERT INTO users_aircrafts (user_id, aircraft_model, hangar_location, fuel_level, maintenance_level, purchase_date, manufacturer, category, engine_type, max_speed_kts, cruise_speed_kts, range_nm, avg_fuel_consumption_gal_h, service_ceiling_ft, max_payload_kg, max_passengers, purchase_price)
-         VALUES (1, 'Cessna 172 Skyhawk G1000', 'LFCH', 100, 100, '2026-05-28', 'Cessna', 'General Aviation', 'Piston', 127, 122, 640, 9, 14000, 385, 4, 745000);
+    INSERT INTO users_aircrafts (user_id, id_aircraft, aircraft_model, hangar_location, fuel_level, maintenance_level, purchase_date, manufacturer, category, engine_type, max_speed_kts, cruise_speed_kts, range_nm, avg_fuel_consumption_gal_h, service_ceiling_ft, max_payload_kg, max_passengers, purchase_price)
+    SELECT 1, id, name, 'LFCH', 100, 100, DATE '2026-05-28', manufacturer, category, engine_type, max_speed_kts, cruise_speed_kts, range_nm, avg_fuel_consumption_gal_h, service_ceiling_ft, max_payload_kg, max_passengers, price_usd
+    FROM read_csv_auto('{AIRCRAFT_CSV_PATH.as_posix()}')
+    WHERE id = {STARTER_AIRCRAFT_ID};
 """)
 # try:
 q = con.execute(query).fetchall()

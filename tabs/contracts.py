@@ -16,12 +16,21 @@ def render(user_id):
     with col_sidebar:
 
         airport_origin = st.text_input("Aeroport de depart (OACI)", get_user_location(user_id).loc[0, 'current_location'])
-        if st.button("Search airport", width="stretch"):
-            try:
-                airport_origin_info = search_airport(airport_origin)
-                st.session_state.airport_origin_info = airport_origin_info
-            except Exception as e:
-                st.error(f"Erreur : {str(e)}")
+
+        col1, col2 = st.columns([3, 1])
+
+        with col1:
+            if st.button("Search airport", width="stretch"):
+                try:
+                    airport_origin_info = search_airport(airport_origin)
+                    st.session_state.airport_origin_info = airport_origin_info
+                except Exception as e:
+                    st.error(f"Erreur : {str(e)}")
+
+        with col2:
+            
+            st.link_button("ⓘ MAP", "https://ourairports.com/big-map.html",width="stretch", type="secondary")
+        
 
         contract_type_selected = st.multiselect(
             "Contract category:",

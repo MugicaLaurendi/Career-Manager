@@ -1,4 +1,5 @@
 import duckdb
+import numpy as np
 import pandas as pd
 import time
 from pathlib import Path
@@ -124,6 +125,8 @@ def add_contract_historical(contract_data, user_id, status):
         status,
         datetime.now(),
     )
+    # DuckDB cannot bind numpy scalars (e.g. numpy.int32) -> convert to native Python types
+    params = tuple(p.item() if isinstance(p, np.generic) else p for p in params)
     result = con.execute(query, params).df()
     return result
 
@@ -226,6 +229,10 @@ def income_to_wallet(user_id, income):
     # Connexion en mémoire
     con = duckdb.connect(DATABASE_PATH)
 
+    # DuckDB cannot bind numpy scalars -> convert to native Python types
+    if isinstance(income, np.generic):
+        income = income.item()
+
     query = "UPDATE users SET wallet = wallet + ? WHERE id = ?;"
     result = con.execute(query, (income, user_id)).df()
     print(f"{datetime.now()} - Updating wallet for user {user_id}: + {income} $")
@@ -291,7 +298,8 @@ def get_user_current_aircraft(user_id):
             users_aircrafts.avg_fuel_consumption_gal_h,
             users_aircrafts.service_ceiling_ft,
             users_aircrafts.max_payload_kg,
-            users_aircrafts.max_passengers
+            users_aircrafts.max_passengers,
+            users_aircrafts.id_aircraft
         FROM users_aircrafts
         INNER JOIN users ON users_aircrafts.id = users.current_aircraft
         WHERE users.id = ?;
@@ -316,6 +324,7 @@ def add_user_aircraft(user_id: int, aircraft_location: str, aircraft_data: pd.Se
     query = """
         INSERT INTO users_aircrafts (
             user_id,
+            id_aircraft,
             aircraft_model,
             hangar_location,
             fuel_level,
@@ -332,11 +341,12 @@ def add_user_aircraft(user_id: int, aircraft_location: str, aircraft_data: pd.Se
             max_payload_kg,
             max_passengers,
             purchase_price
-        ) VALUES (?, ?, ?, 100, 100, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, 100, 100, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
     """
     params = (
         user_id,
+        int(aircraft_data['id']),
         aircraft_data['name'],
         aircraft_location,
         datetime.now().date(),

@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
+from scripts.aircraft_image import get_aircraft_image_path
 from scripts.database_requests import (
     get_user_intels,
     get_users_aircrafts_name,
@@ -9,6 +12,7 @@ from scripts.database_requests import (
     update_user_current_aircraft,
 )
 
+IMAGES_DIR = Path(__file__).resolve().parent.parent / "data" / "images"
 
 def render(user_id):
 
@@ -17,9 +21,9 @@ def render(user_id):
 
             st.subheader("Current aircraft details")
 
-            current_aircraft_details = pd.DataFrame(get_user_current_aircraft(user_id), columns=["aircraft_model", "fuel_level", "maintenance_level", "purchase_price", "purchase_date", "manufacturer", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers"])
+            current_aircraft_details = pd.DataFrame(get_user_current_aircraft(user_id), columns=["aircraft_model", "fuel_level", "maintenance_level", "purchase_price", "purchase_date", "manufacturer", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers", "id_aircraft"])
 
-            col_1, col_2, col_3 = st.columns(3)
+            col_1, col_2, col_3, col_4 = st.columns(4)
 
             with col_1:
                 st.markdown(f"**Model :** {current_aircraft_details['aircraft_model'].iloc[0]}")
@@ -42,6 +46,10 @@ def render(user_id):
                 st.markdown(f"**Service ceiling :** {current_aircraft_details['service_ceiling_ft'].iloc[0]} ft")
                 st.markdown(f"**Purchase date :** {current_aircraft_details['purchase_date'].iloc[0]}")
                 st.markdown(f"**Purchase price :** $ {current_aircraft_details['purchase_price'].iloc[0]:,}".replace(',', ' '))
+
+            with col_4:
+                 st.image(f"{IMAGES_DIR}/aircrafts/{current_aircraft_details['id_aircraft'].iloc[0]}.jpg")
+
 
     with st.container(border=True):
 

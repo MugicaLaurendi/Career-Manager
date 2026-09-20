@@ -3,6 +3,7 @@ import time
 import pandas as pd
 import streamlit as st
 
+from scripts.aircraft_image import get_aircraft_thumbnail
 from scripts.database_requests import (
     get_user_intels,
     get_user_location,
@@ -14,14 +15,18 @@ from scripts.database_requests import (
 
 def render(user_id):
 
-    col_list, col_info = st.columns([1, 1])
+    col_list, col_info = st.columns([2, 1])
 
     with col_list:
 
         df_aircrafts = pd.read_csv("./data/aircraft.csv")
 
-        aircraft_selection = st.dataframe(df_aircrafts[["name", "manufacturer", "price_usd", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers"]],
-                                           hide_index=True, on_select="rerun", selection_mode="single-row", column_config={"price_usd": st.column_config.NumberColumn("Price", format="$ %,d")})
+        df_aircrafts["image"] = df_aircrafts["id"].apply(get_aircraft_thumbnail)
+
+        aircraft_selection = st.dataframe(df_aircrafts[["image", "name", "manufacturer", "price_usd", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers"]],
+                                           hide_index=True, on_select="rerun", selection_mode="single-row-required", row_height=100,height=700,
+                                           column_config={"image": st.column_config.ImageColumn("Image", width="medium"),
+                                                          "price_usd": st.column_config.NumberColumn("Price", format="$ %,d")})
 
     with col_info:
 
@@ -31,6 +36,8 @@ def render(user_id):
                 selected_aircraft = df_aircrafts.iloc[selected_index]
 
                 st.subheader("Aircraft details")
+
+                st.image(get_aircraft_thumbnail(selected_aircraft['id'], size=(400, 250)), width="stretch")
 
                 col_1, col_2 = st.columns(2)
 

@@ -4,6 +4,7 @@ import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
+from scripts.search_contract import search_airport
 from scripts.database_requests import (
     get_user_location,
     get_airport_location,
@@ -73,6 +74,9 @@ def render(user_id, airport_origin, center_lat, center_lon):
                     st.warning("No destination selected")
                 elif airport_destination_ff != '':
                     update_user_location(user_id, airport_destination_ff)
+                    st.session_state.airport_origin_info = search_airport(airport_destination_ff)
+                    st.session_state.dest_ff_lat = 0
+                    st.session_state.dest_ff_lon = 0
                     st.success(f"You have moved to {airport_destination_ff}")
                     time.sleep(2)
                     st.rerun()
@@ -117,7 +121,9 @@ def render(user_id, airport_origin, center_lat, center_lon):
                                 if get_contract_accepted(user_id).empty == False:
                                     add_contract_historical(st.session_state.contract, user_id, "completed")
                                     income_to_wallet(user_id, st.session_state.contract.loc[0, 'reward'])
-                                    update_user_location(user_id, st.session_state.contract.loc[0, 'arrival_airport'])
+                                    new_location = st.session_state.contract.loc[0, 'arrival_airport']
+                                    update_user_location(user_id, new_location)
+                                    st.session_state.airport_origin_info = search_airport(new_location)
                                     st.success("Contract completed", width="stretch")
                                     time.sleep(2)
                                     st.session_state.contract = 0

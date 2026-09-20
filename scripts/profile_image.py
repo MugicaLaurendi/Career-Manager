@@ -5,7 +5,7 @@ from PIL import Image
 
 
 PROFILE_IMAGES_DIR = Path(__file__).resolve().parent.parent / "data" / "images" / "profiles"
-PLACEHOLDER_IMAGE_PATH = Path(__file__).resolve().parent.parent / "data" / "images" / "profil_placeholder.png"
+PLACEHOLDER_IMAGE_PATH = Path(__file__).resolve().parent.parent / "data" / "images" / "placeholders" / "profile_placeholder.png"
 
 
 def save_profile_image(user_id, uploaded_file):
