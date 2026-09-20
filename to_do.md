@@ -10,19 +10,14 @@
 
 ## 🟡 Fonctionnel / dette
 
-- [ ] `tabs/bank.py` est quasiment vide — onglet visible dans l'UI mais non implémenté.
-- [ ] `user_id = 1` en dur (`app.py:27`) — pas d'authentification, cohérent avec ce que note déjà le README.
 - [ ] Code de carte Folium dupliqué entre `contracts.py` et `flight.py` — à mutualiser dans un helper commun.
-- [ ] Aucun typing, gestion d'erreurs inégale (`try/except Exception` générique par endroits, absente dans `database_requests.py`).
-- [ ] Ajouter la gestion d'utilisateurs et une authentification
-- [ ] ajouter une navbar sur la gauche
-- [ ] Permettre l'acceptation réelle d'un contrat et la mise à jour du portefeuille
-- [ ] Ajouter des détails de l'aéronef et un hangar actif
-- [ ] Optimiser la génération des contrats et les filtres de recherche
-
-
-## ✅ Points forts à noter
-
-- Le split récent d'`app.py` en modules `tabs/` va dans la bonne direction.
-- La séparation UI/logique est amorcée.
-- Le README a déjà une section "améliorations possibles" plutôt lucide.
+- [x] Ajouter la gestion d'utilisateurs et une authentification
+- [x] ajouter une navbar sur la gauche
+- [ ] Ajouter la gestion du carburant
+- [ ] Dans le hangar, ajouter la possibilité de mettre du carburant et faire l'entretien
+- [ ] Ajouter un calculateur de consomation. entrée : distance en nm, et sortie : quantitée consommé en gal
+- [ ] Rajouter des nouveaux types de contrats
+- [ ] Dans la banque, ajouter la possibilité de contracter un credit
+- [ ] Dans la banque, ajouter les logs (gains et pertes)
+- [ ] Separer l'onglet flight en deux : free flight, contracts
+- [ ] Dans l'onglet free flight et dans l'onglet contracts, ajouter les logs liés au vol connecté a l'api MSFS2024

@@ -19,36 +19,41 @@ def render(user_id):
 
     with st.container(border=True):
 
-            st.subheader("Current aircraft details")
-
-            current_aircraft_details = pd.DataFrame(get_user_current_aircraft(user_id), columns=["aircraft_model", "fuel_level", "maintenance_level", "purchase_price", "purchase_date", "manufacturer", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers", "id_aircraft"])
-
-            col_1, col_2, col_3, col_4 = st.columns(4)
+            col_1, col_2 = st.columns([2, 1])
 
             with col_1:
-                st.markdown(f"**Model :** {current_aircraft_details['aircraft_model'].iloc[0]}")
-                st.markdown(f"**Fuel level :** {current_aircraft_details['fuel_level'].iloc[0]} %")
-                st.markdown(f"**Maintenance level :** {current_aircraft_details['maintenance_level'].iloc[0]} %")
-                st.markdown(f"**Range :** {current_aircraft_details['range_nm'].iloc[0]} nm")
-                st.markdown(f"**Cruise speed :** {current_aircraft_details['cruise_speed_kts'].iloc[0]} kts")
+
+                st.subheader("Current aircraft details")
+
+                current_aircraft_details = pd.DataFrame(get_user_current_aircraft(user_id), columns=["aircraft_model", "fuel_level", "maintenance_level", "purchase_price", "purchase_date", "manufacturer", "category", "engine_type", "max_speed_kts", "cruise_speed_kts", "range_nm", "avg_fuel_consumption_gal_h", "service_ceiling_ft", "max_payload_kg", "max_passengers", "id_aircraft"])
+
+                col_11, col_12, col_13 = st.columns(3)
+
+                with col_11:
+                    st.markdown(f"**Model :** {current_aircraft_details['aircraft_model'].iloc[0]}")
+                    st.markdown(f"**Fuel level :** {current_aircraft_details['fuel_level'].iloc[0]} %")
+                    st.markdown(f"**Maintenance level :** {current_aircraft_details['maintenance_level'].iloc[0]} %")
+                    st.markdown(f"**Range :** {current_aircraft_details['range_nm'].iloc[0]} nm")
+                    st.markdown(f"**Cruise speed :** {current_aircraft_details['cruise_speed_kts'].iloc[0]} kts")
+
+                with col_12:
+
+                    st.markdown(f"**Manufacturer :** {current_aircraft_details['manufacturer'].iloc[0]}")
+                    st.markdown(f"**Category :** {current_aircraft_details['category'].iloc[0]}")
+                    st.markdown(f"**Max payload :** {current_aircraft_details['max_payload_kg'].iloc[0]} kg")
+                    st.markdown(f"**Max passengers :** {current_aircraft_details['max_passengers'].iloc[0]}")
+                    st.markdown(f"**Avg fuel consumption :** {current_aircraft_details['avg_fuel_consumption_gal_h'].iloc[0]} gal/h")
+
+                with col_13:
+                    st.markdown(f"**Engine type :** {current_aircraft_details['engine_type'].iloc[0]}")
+                    st.markdown(f"**Max speed :** {current_aircraft_details['max_speed_kts'].iloc[0]} kts")
+                    st.markdown(f"**Service ceiling :** {current_aircraft_details['service_ceiling_ft'].iloc[0]} ft")
+                    st.markdown(f"**Purchase date :** {current_aircraft_details['purchase_date'].iloc[0]}")
+                    st.markdown(f"**Purchase price :** $ {current_aircraft_details['purchase_price'].iloc[0]:,}".replace(',', ' '))
 
             with col_2:
 
-                st.markdown(f"**Manufacturer :** {current_aircraft_details['manufacturer'].iloc[0]}")
-                st.markdown(f"**Category :** {current_aircraft_details['category'].iloc[0]}")
-                st.markdown(f"**Max payload :** {current_aircraft_details['max_payload_kg'].iloc[0]} kg")
-                st.markdown(f"**Max passengers :** {current_aircraft_details['max_passengers'].iloc[0]}")
-                st.markdown(f"**Avg fuel consumption :** {current_aircraft_details['avg_fuel_consumption_gal_h'].iloc[0]} gal/h")
-
-            with col_3:
-                st.markdown(f"**Engine type :** {current_aircraft_details['engine_type'].iloc[0]}")
-                st.markdown(f"**Max speed :** {current_aircraft_details['max_speed_kts'].iloc[0]} kts")
-                st.markdown(f"**Service ceiling :** {current_aircraft_details['service_ceiling_ft'].iloc[0]} ft")
-                st.markdown(f"**Purchase date :** {current_aircraft_details['purchase_date'].iloc[0]}")
-                st.markdown(f"**Purchase price :** $ {current_aircraft_details['purchase_price'].iloc[0]:,}".replace(',', ' '))
-
-            with col_4:
-                 st.image(f"{IMAGES_DIR}/aircrafts/{current_aircraft_details['id_aircraft'].iloc[0]}.jpg")
+                st.image(f"{IMAGES_DIR}/aircrafts/{current_aircraft_details['id_aircraft'].iloc[0]}.jpg")
 
 
     with st.container(border=True):
